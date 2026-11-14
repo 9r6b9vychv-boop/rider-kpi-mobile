@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rider KPI">
+<meta name="theme-color" content="#ee4d2d">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Rider KPI Mobile</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #ee4d2d;
+    --accent-soft: #fff1ee;
+    --green: #059669;
+    --blue: #2563eb;
+    --amber: #d97706;
+    --red: #dc2626;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.4;
+    padding-bottom: 32px;
+  }
+  .topbar {
+    background: linear-gradient(135deg, #ee4d2d, #ff7337);
+    color: #fff;
+    padding: 14px 16px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .topbar h1 { margin: 0; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
+  .topbar .sub { font-size: 12px; opacity: 0.92; margin-top: 3px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .container { max-width: 900px; margin: 0 auto; padding: 12px; }
+  .panel {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    border: 1px solid var(--border);
+    background: #f9fafb;
+    color: #374151;
+    padding: 6px 11px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+  }
+  .pill.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .date-row label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 2px; }
+  .date-row input, .controls select, .controls input {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+  }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  @media (min-width: 640px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+  .kpi-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .kpi-label { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .kpi-val { font-size: 21px; font-weight: 800; margin: 2px 0; }
+  .kpi-sub { font-size: 11.5px; color: var(--muted); }
+  .c-green { color: var(--green); }
+  .c-blue { color: var(--blue); }
+  .c-amber { color: var(--amber); }
+  .c-red { color: var(--red); }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: 11.5px; color: var(--muted); font-weight: 700; background: #f9fafb; }
+  tr.ward-row { cursor: pointer; }
+  tr.ward-row:hover { background: #f9fafb; }
+  tr.ward-row.selected { background: var(--accent-soft); }
+  tr.ward-row.selected td:first-child { color: var(--accent); font-weight: 700; }
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .b-deli { background: #dbeafe; color: #1d4ed8; }
+  .b-mix { background: #fef3c7; color: #b45309; }
+  .b-pick { background: #ede9fe; color: #6d28d9; }
+  .controls { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
+  @media (min-width: 560px) { .controls { grid-template-columns: 1.5fr 1fr; } }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12.5px; }
+  .chip-clear {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid #fecaca;
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .empty { text-align: center; padding: 24px 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>
+    <span>📊 Rider KPI Mobile</span>
+    <span id="topRangeBadge" style="font-size:12px;font-weight:600;background:rgba(255,255,255,0.22);padding:3px 9px;border-radius:999px;">--</span>
+  </h1>
+  <div class="sub">
+    <span id="genTime">Cập nhật: --</span>
+    <span id="dateAvailCount">-- ngày dữ liệu</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="panel">
+    <div class="section-title"><span>⏱️ Khoảng thời gian</span></div>
+    <div class="pills" id="periodPills">
+      <button class="pill active" data-period="day">Ngày mới nhất</button>
+      <button class="pill" data-period="week">Tuần này</button>
+      <button class="pill" data-period="month">Tháng này</button>
+      <button class="pill" data-period="year">Năm nay</button>
+      <button class="pill" data-period="all">Tất cả</button>
+    </div>
+    <div class="date-row">
+      <div>
+        <label for="dateFrom">Từ ngày</label>
+        <input type="date" id="dateFrom">
+      </div>
+      <div>
+        <label for="dateTo">Đến ngày</label>
+        <input type="date" id="dateTo">
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:11px;"><span>🛵 Nhóm Rider</span></div>
+    <div class="pills" id="rolePills">
+      <button class="pill" data-role="ALL">Tất cả</button>
+      <button class="pill active" data-role="DELI_MIX">Deli + Mix</button>
+      <button class="pill" data-role="Deli">Deli</button>
+      <button class="pill" data-role="Mix">Mix</button>
+      <button class="pill" data-role="Pick">Pick</button>
+    </div>
+
+    <div class="section-title" style="margin-top:11px;">
+      <span>📍 Chọn Phường</span>
+      <span id="wardScopeBadge" style="font-size:11.5px;color:var(--accent);font-weight:700;"></span>
+    </div>
+    <div class="pills" id="wardPills"></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Đã Giao (Delivered)</div>
+      <div class="kpi-val c-green" id="kpiDelivered">0</div>
+      <div class="kpi-sub" id="kpiRate">Tỉ lệ: 0%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Tổng Nhận (Assigned)</div>
+      <div class="kpi-val c-blue" id="kpiAssigned">0</div>
+      <div class="kpi-sub" id="kpiHanded">Handed Over: 0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Thất Bại (Failed)</div>
+      <div class="kpi-val c-red" id="kpiFailed">0</div>
+      <div class="kpi-sub" id="kpiOnhold">On-hold: 0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Tồn / Stuck</div>
+      <div class="kpi-val c-amber" id="kpiStuck">0</div>
+      <div class="kpi-sub" id="kpiRiders">0 Rider</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">
+      <span>📍 Tổng Hợp 7 Phường (Chạm để lọc)</span>
+      <button id="clearWardBtn" class="chip-clear" style="display:none;">✕ Bỏ lọc phường</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Phường</th>
+            <th>Rider</th>
+            <th>Nhận</th>
+            <th>Giao</th>
+            <th>%</th>
+            <th>Lỗi/Tồn</th>
+          </tr>
+        </thead>
+        <tbody id="wardBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">
+      <span>👤 Chi Tiết Rider (<span id="riderCountLabel">0</span>)</span>
+    </div>
+    <div class="controls">
+      <input type="search" id="searchInput" placeholder="🔍 Tìm tên hoặc ID rider...">
+      <select id="sortSelect">
+        <option value="delivered_desc">Giao nhiều nhất</option>
+        <option value="rate_desc">Tỉ lệ giao cao → thấp</option>
+        <option value="issues_desc">Lỗi + Tồn nhiều nhất</option>
+        <option value="name_asc">Tên A → Z</option>
+      </select>
+    </div>
+    <div class="toggle-row">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="onlyIssuesChk"> ⚠️ Chỉ hiện rider có đơn lỗi / tồn
+      </label>
+      <span id="activeWardLabel" style="color:var(--muted);font-size:12px;"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Rider</th>
+            <th>Vai trò</th>
+            <th>Phường</th>
+            <th>Nhận</th>
+            <th>Giao</th>
+            <th>%</th>
+            <th>Fail</th>
+            <th>Hold</th>
+            <th>Stuck</th>
+          </tr>
+        </thead>
+        <tbody id="riderBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = {"generatedAt":"--","wards":["Gò Vấp - P.1","Gò Vấp - P.3","Gò Vấp - P.4","Gò Vấp - P.7","Phú Nhuận - P.1","Phú Nhuận - P.2","Phú Nhuận - P.7","Khác / Ngoài 7 phường"],"dates":[],"rows":[]};
+const fmt = n => Number(n || 0).toLocaleString("vi-VN");
+const pct = (deliv, ass) => ass > 0 ? ((deliv * 100) / ass).toFixed(1) + "%" : "0.0%";
+
+let state = {
+  period: "day",
+  dateFrom: DATA.dates[0] || "",
+  dateTo: DATA.dates[0] || "",
+  role: "DELI_MIX",
+  ward: "",
+  search: "",
+  sort: "delivered_desc",
+  onlyIssues: false
+};
+
+document.getElementById("genTime").textContent = "Cập nhật: " + DATA.generatedAt;
+document.getElementById("dateAvailCount").textContent = DATA.dates.length + " ngày dữ liệu";
+
+function applyPeriod(period) {
+  state.period = period;
+  const latest = DATA.dates[0] || "";
+  if (!latest) { state.dateFrom = ""; state.dateTo = ""; syncDateInputs(); render(); return; }
+  const d = new Date(latest + "T00:00:00");
+  const iso = dt => dt.toISOString().slice(0, 10);
+  if (period === "day") {
+    state.dateFrom = latest;
+    state.dateTo = latest;
+  } else if (period === "week") {
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - diff);
+    state.dateFrom = iso(mon);
+    state.dateTo = latest;
+  } else if (period === "month") {
+    state.dateFrom = latest.slice(0, 7) + "-01";
+    state.dateTo = latest;
+  } else if (period === "year") {
+    state.dateFrom = latest.slice(0, 4) + "-01-01";
+    state.dateTo = latest;
+  } else {
+    state.dateFrom = DATA.dates[DATA.dates.length - 1] || "";
+    state.dateTo = latest;
+  }
+  syncDateInputs();
+  render();
+}
+
+function syncDateInputs() {
+  document.getElementById("dateFrom").value = state.dateFrom;
+  document.getElementById("dateTo").value = state.dateTo;
+}
+
+function matchRole(roleVal) {
+  if (state.role === "ALL") return true;
+  if (state.role === "DELI_MIX") return roleVal === "Deli" || roleVal === "Mix";
+  return roleVal === state.role;
+}
+
+function shortWardLabel(w) {
+  if (!w) return "Tất cả";
+  return w.replace("Gò Vấp - ", "GV ").replace("Phú Nhuận - ", "PN ").replace("Khác / Ngoài 7 phường", "Ngoài 7P");
+}
+
+function buildWardPills() {
+  const host = document.getElementById("wardPills");
+  if (!host) return;
+  host.innerHTML = "";
+  const items = [""].concat(DATA.wards || []);
+  for (const w of items) {
+    const btn = document.createElement("button");
+    btn.className = "pill" + (state.ward === w ? " active" : "");
+    btn.dataset.ward = w;
+    btn.textContent = shortWardLabel(w);
+    btn.onclick = () => {
+      state.ward = w;
+      render();
+    };
+    host.appendChild(btn);
+  }
+}
+
+function render() {
+  const from = state.dateFrom || "0000-00-00";
+  const to = state.dateTo || "9999-99-99";
+  document.getElementById("topRangeBadge").textContent =
+    from === to ? (from || "Trống") : `${from} → ${to}`;
+
+  buildWardPills();
+  const scopeBadge = document.getElementById("wardScopeBadge");
+  if (scopeBadge) scopeBadge.textContent = state.ward ? ("Đang xem: " + state.ward) : "Tất cả phường";
+
+  const filtered = DATA.rows.filter(r =>
+    r[0] >= from && r[0] <= to && matchRole(r[2])
+  );
+
+  // Overall KPIs (respects selected ward) + Ward summary table (all wards)
+  let totAss = 0, totHand = 0, totDeliv = 0, totFail = 0, totHold = 0, totStuck = 0;
+  const riderSet = new Set();
+  const wardMap = new Map();
+  DATA.wards.forEach(w => wardMap.set(w, { riders: new Set(), ass: 0, deliv: 0, issues: 0 }));
+
+  for (const r of filtered) {
+    const [, disp, , w, ass, hand, deliv, fail, hold, stuck] = r;
+    if (!state.ward || w === state.ward) {
+      totAss += ass; totHand += hand; totDeliv += deliv;
+      totFail += fail; totHold += hold; totStuck += stuck;
+      riderSet.add(disp);
+    }
+    if (!wardMap.has(w)) wardMap.set(w, { riders: new Set(), ass: 0, deliv: 0, issues: 0 });
+    const wm = wardMap.get(w);
+    wm.riders.add(disp);
+    wm.ass += ass;
+    wm.deliv += deliv;
+    wm.issues += (fail + hold + stuck);
+  }
+
+  document.getElementById("kpiDelivered").textContent = fmt(totDeliv);
+  document.getElementById("kpiRate").textContent = "Tỉ lệ: " + pct(totDeliv, totAss);
+  document.getElementById("kpiAssigned").textContent = fmt(totAss);
+  document.getElementById("kpiHanded").textContent = "Handed Over: " + fmt(totHand);
+  document.getElementById("kpiFailed").textContent = fmt(totFail);
+  document.getElementById("kpiOnhold").textContent = "On-hold: " + fmt(totHold);
+  document.getElementById("kpiStuck").textContent = fmt(totStuck);
+  document.getElementById("kpiRiders").textContent = riderSet.size + " Rider";
+
+  // Ward table
+  const wardBody = document.getElementById("wardBody");
+  wardBody.innerHTML = "";
+  const wardKeys = [...DATA.wards, ...[...wardMap.keys()].filter(k => !DATA.wards.includes(k))];
+  let anyWard = false;
+  for (const w of wardKeys) {
+    const wm = wardMap.get(w);
+    if (!wm || (wm.ass === 0 && wm.deliv === 0 && wm.issues === 0 && wm.riders.size === 0)) continue;
+    anyWard = true;
+    const tr = document.createElement("tr");
+    tr.className = "ward-row" + (state.ward === w ? " selected" : "");
+    tr.innerHTML = `
+      <td>${w}</td>
+      <td>${wm.riders.size}</td>
+      <td>${fmt(wm.ass)}</td>
+      <td class="c-green"><b>${fmt(wm.deliv)}</b></td>
+      <td>${pct(wm.deliv, wm.ass)}</td>
+      <td class="${wm.issues > 0 ? 'c-red' : ''}">${fmt(wm.issues)}</td>
+    `;
+    tr.onclick = () => {
+      state.ward = (state.ward === w) ? "" : w;
+      render();
+    };
+    wardBody.appendChild(tr);
+  }
+  if (!anyWard) {
+    wardBody.innerHTML = '<tr><td colspan="6" class="empty">Không có dữ liệu trong khoảng thời gian này</td></tr>';
+  }
+
+  document.getElementById("clearWardBtn").style.display = state.ward ? "inline-block" : "none";
+  document.getElementById("activeWardLabel").textContent = state.ward ? ("Đang lọc: " + state.ward) : "";
+
+  // Rider aggregation
+  const rMap = new Map();
+  for (const r of filtered) {
+    const [, disp, role, w, ass, hand, deliv, fail, hold, stuck] = r;
+    if (state.ward && w !== state.ward) continue;
+    if (!rMap.has(disp)) {
+      rMap.set(disp, { disp, role, w, ass: 0, hand: 0, deliv: 0, fail: 0, hold: 0, stuck: 0 });
+    }
+    const rm = rMap.get(disp);
+    rm.ass += ass; rm.hand += hand; rm.deliv += deliv;
+    rm.fail += fail; rm.hold += hold; rm.stuck += stuck;
+    rm.role = role; rm.w = w;
+  }
+
+  const q = state.search.trim().toLowerCase();
+  let riders = [...rMap.values()].filter(rm => {
+    if (q && !rm.disp.toLowerCase().includes(q) && !rm.w.toLowerCase().includes(q)) return false;
+    if (state.onlyIssues && (rm.fail + rm.hold + rm.stuck) === 0) return false;
+    return true;
+  });
+
+  riders.sort((a, b) => {
+    if (state.sort === "delivered_desc") return b.deliv - a.deliv || b.ass - a.ass;
+    if (state.sort === "rate_desc") {
+      const ra = a.ass > 0 ? a.deliv / a.ass : 0;
+      const rb = b.ass > 0 ? b.deliv / b.ass : 0;
+      return rb - ra || b.deliv - a.deliv;
+    }
+    if (state.sort === "issues_desc") {
+      return (b.fail + b.hold + b.stuck) - (a.fail + a.hold + a.stuck) || b.deliv - a.deliv;
+    }
+    return a.disp.localeCompare(b.disp, "vi");
+  });
+
+  document.getElementById("riderCountLabel").textContent = riders.length;
+  const riderBody = document.getElementById("riderBody");
+  riderBody.innerHTML = "";
+  if (riders.length === 0) {
+    riderBody.innerHTML = '<tr><td colspan="9" class="empty">Không tìm thấy rider phù hợp</td></tr>';
+    return;
+  }
+  for (const rm of riders) {
+    const badgeCls = rm.role === "Pick" ? "b-pick" : (rm.role === "Mix" ? "b-mix" : "b-deli");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${rm.disp}</b></td>
+      <td><span class="badge ${badgeCls}">${rm.role}</span></td>
+      <td>${rm.w.replace("Gò Vấp - ", "GV ").replace("Phú Nhuận - ", "PN ")}</td>
+      <td>${fmt(rm.ass)}</td>
+      <td class="c-green"><b>${fmt(rm.deliv)}</b></td>
+      <td>${pct(rm.deliv, rm.ass)}</td>
+      <td class="${rm.fail > 0 ? 'c-red' : ''}">${fmt(rm.fail)}</td>
+      <td class="${rm.hold > 0 ? 'c-amber' : ''}">${fmt(rm.hold)}</td>
+      <td class="${rm.stuck > 0 ? 'c-amber' : ''}">${fmt(rm.stuck)}</td>
+    `;
+    riderBody.appendChild(tr);
+  }
+}
+
+document.querySelectorAll("#periodPills .pill").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#periodPills .pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    applyPeriod(btn.dataset.period);
+  };
+});
+
+document.querySelectorAll("#rolePills .pill").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#rolePills .pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.role = btn.dataset.role;
+    render();
+  };
+});
+
+document.getElementById("dateFrom").onchange = e => {
+  state.dateFrom = e.target.value;
+  document.querySelectorAll("#periodPills .pill").forEach(b => b.classList.remove("active"));
+  render();
+};
+document.getElementById("dateTo").onchange = e => {
+  state.dateTo = e.target.value;
+  document.querySelectorAll("#periodPills .pill").forEach(b => b.classList.remove("active"));
+  render();
+};
+document.getElementById("searchInput").oninput = e => { state.search = e.target.value; render(); };
+document.getElementById("sortSelect").onchange = e => { state.sort = e.target.value; render(); };
+document.getElementById("onlyIssuesChk").onchange = e => { state.onlyIssues = e.target.checked; render(); };
+document.getElementById("clearWardBtn").onclick = () => { state.ward = ""; render(); };
+
+applyPeriod("day");
+
+if (true && !true) {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+  try {
+    const cachedRaw = localStorage.getItem("rider_kpi_cache_v1");
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      if (cached && Array.isArray(cached.rows) && cached.rows.length > 0 && (!DATA.rows || DATA.rows.length === 0)) {
+        Object.assign(DATA, cached);
+        document.getElementById("genTime").textContent = "Cập nhật (Offline): " + (DATA.generatedAt || "--");
+        document.getElementById("dateAvailCount").textContent = (DATA.dates ? DATA.dates.length : 0) + " ngày dữ liệu";
+        applyPeriod("day");
+      }
+    }
+    localStorage.setItem("rider_kpi_cache_v1", JSON.stringify(DATA));
+  } catch (e) {}
+
+  fetch("./data.json?_=" + Date.now(), { cache: "no-store" })
+    .then(res => res.ok ? res.json() : null)
+    .then(fresh => {
+      if (fresh && Array.isArray(fresh.rows)) {
+        Object.assign(DATA, fresh);
+        try { localStorage.setItem("rider_kpi_cache_v1", JSON.stringify(fresh)); } catch (e) {}
+        document.getElementById("genTime").textContent = "🟢 Đã đồng bộ: " + (DATA.generatedAt || "--");
+        document.getElementById("dateAvailCount").textContent = (DATA.dates ? DATA.dates.length : 0) + " ngày dữ liệu";
+        applyPeriod(state.period || "day");
+      }
+    })
+    .catch(() => {
+      document.getElementById("genTime").textContent = "📴 Offline • " + (DATA.generatedAt || "--");
+    });
+}
+
+if (true) {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+  const overlay = document.createElement("div");
+  overlay.id = "lockOverlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(244,246,249,0.98);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:360px;background:#fff;border-radius:16px;padding:22px 18px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #e5e7eb;text-align:center;">
+      <div style="font-size:34px;margin-bottom:6px;">🔒</div>
+      <h2 style="margin:0 0 6px;font-size:18px;color:#1f2937;">Rider KPI Bảo Mật</h2>
+      <p style="margin:0 0 14px;font-size:12.5px;color:#6b7280;">Dữ liệu được mã hóa AES-256. Nhập mật khẩu của bạn để mở xem báo cáo.</p>
+      <input type="password" id="unlockPwdInput" placeholder="Nhập mật khẩu..." style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;margin-bottom:10px;">
+      <label style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;color:#4b5563;margin-bottom:12px;cursor:pointer;">
+        <input type="checkbox" id="rememberPwdChk" checked> Nhớ mật khẩu trên máy này
+      </label>
+      <button id="unlockBtn" style="width:100%;padding:11px;border:none;border-radius:10px;background:#ee4d2d;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">🔓 Mở Khóa</button>
+      <div id="unlockErr" style="color:#dc2626;font-size:12.5px;margin-top:10px;min-height:18px;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const lockBtn = document.createElement("button");
+  lockBtn.textContent = "🔒 Khóa";
+  lockBtn.style.cssText = "background:rgba(255,255,255,0.22);border:none;color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;cursor:pointer;margin-left:6px;";
+  lockBtn.onclick = () => {
+    try { localStorage.removeItem("rider_kpi_pwd_v1"); } catch (e) {}
+    overlay.style.display = "flex";
+    document.getElementById("unlockPwdInput").value = "";
+    document.getElementById("unlockErr").textContent = "";
+  };
+  document.getElementById("topRangeBadge").parentElement.appendChild(lockBtn);
+
+  const b64ToBytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  async function decryptEnvelope(env, pwd) {
+    const enc = new TextEncoder();
+    const baseKey = await crypto.subtle.importKey("raw", enc.encode(pwd), "PBKDF2", false, ["deriveKey"]);
+    const aesKey = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: b64ToBytes(env.salt), iterations: env.iter || 200000, hash: "SHA-256" },
+      baseKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["decrypt"]
+    );
+    const plainBuf = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: b64ToBytes(env.iv) },
+      aesKey,
+      b64ToBytes(env.ct)
+    );
+    return JSON.parse(new TextDecoder().decode(plainBuf));
+  }
+
+  let cachedEnv = null;
+  try {
+    const rawEnv = localStorage.getItem("rider_kpi_enc_v1");
+    if (rawEnv) cachedEnv = JSON.parse(rawEnv);
+  } catch (e) {}
+
+  async function loadEnvelope() {
+    try {
+      const res = await fetch("./data.enc.json?_=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        const freshEnv = await res.json();
+        cachedEnv = freshEnv;
+        try { localStorage.setItem("rider_kpi_enc_v1", JSON.stringify(freshEnv)); } catch (e) {}
+        return { env: freshEnv, offline: false };
+      }
+    } catch (e) {}
+    if (cachedEnv) return { env: cachedEnv, offline: true };
+    throw new Error("Không tải được dữ liệu mã hóa (kiểm tra mạng hoặc đợi GitHub Pages cập nhật 1 phút).");
+  }
+
+  async function tryUnlock(pwd) {
+    const errEl = document.getElementById("unlockErr");
+    errEl.textContent = "⏳ Đang giải mã...";
+    try {
+      const { env, offline } = await loadEnvelope();
+      const fresh = await decryptEnvelope(env, pwd);
+      if (document.getElementById("rememberPwdChk").checked) {
+        try { localStorage.setItem("rider_kpi_pwd_v1", pwd); } catch (e) {}
+      }
+      Object.assign(DATA, fresh);
+      document.getElementById("genTime").textContent = (offline ? "📴 Offline • " : "🟢 Đã đồng bộ: ") + (DATA.generatedAt || "--");
+      document.getElementById("dateAvailCount").textContent = (DATA.dates ? DATA.dates.length : 0) + " ngày dữ liệu";
+      overlay.style.display = "none";
+      errEl.textContent = "";
+      applyPeriod(state.period || "day");
+    } catch (err) {
+      errEl.textContent = err && err.name === "OperationError"
+        ? "❌ Sai mật khẩu rồi, bạn kiểm tra lại nhé!"
+        : ("❌ " + (err.message || "Lỗi giải mã"));
+    }
+  }
+
+  document.getElementById("unlockBtn").onclick = () => {
+    const p = document.getElementById("unlockPwdInput").value;
+    if (!p) { document.getElementById("unlockErr").textContent = "Vui lòng nhập mật khẩu"; return; }
+    tryUnlock(p);
+  };
+  document.getElementById("unlockPwdInput").onkeydown = e => {
+    if (e.key === "Enter") document.getElementById("unlockBtn").click();
+  };
+
+  try {
+    const savedPwd = localStorage.getItem("rider_kpi_pwd_v1");
+    if (savedPwd) {
+      document.getElementById("unlockPwdInput").value = savedPwd;
+      tryUnlock(savedPwd);
+    }
+  } catch (e) {}
+}
+</script>
+</body>
+</html>
